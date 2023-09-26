@@ -9,11 +9,12 @@ function(fgt_test target)
         ${EIGEN3_INCLUDE_DIR}
         )
     target_link_libraries(${target}
-        PRIVATE
-        gtest_main
-        gtest
-        Library-C++
-        )
+      PRIVATE
+      ${GTEST_LIBRARIES}
+      GTest::gtest_main
+      ${GenerateExportHeader}
+      Library-C++
+    )
     if(${CMAKE_COMPILER_IS_GNUCXX})
         target_compile_options(${target}
             PRIVATE

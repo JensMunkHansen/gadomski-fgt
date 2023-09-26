@@ -18,10 +18,11 @@ TEST(Cluster, Reference) {
         }
         index += 128 / nclusters;
     }
-    Clustering clustering = cluster(points, nclusters, 1e-5, starting_clusters);
+    auto clustering =
+        cluster<Matrix, Vector>(points, nclusters, 1e-5, starting_clusters);
     auto labels =
         load_binary_test_matrix<int>("kmeans-128-labels.dat", 128 * 128, 1);
     ASSERT_EQ(labels.size(), clustering.indices.size());
     EXPECT_TRUE(labels.cast<Matrix::Index>().isApprox(clustering.indices));
 }
-}
+} // namespace fgt

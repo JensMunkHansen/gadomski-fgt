@@ -22,21 +22,25 @@
 
 namespace fgt {
 
-Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
-                   double epsilon, const MatrixRef starting_clusters) {
+template <typename M, typename V>
+Clustering<M, V> cluster(const Eigen::Ref<const M> points,
+                         typename M::Index nclusters,
+                         typename M::Scalar epsilon,
+                         const Eigen::Ref<const M> starting_clusters) {
     auto rows = points.rows();
     auto cols = points.cols();
-    Matrix clusters(starting_clusters);
-    Matrix temp_clusters(clusters);
-    VectorXs counts(nclusters);
-    VectorXs labels(rows);
-    double error = 0.0;
-    double old_error = 0.0;
+    M clusters(starting_clusters);
+    M temp_clusters(clusters);
+    Eigen::Matrix<typename M::Index, Eigen::Dynamic, 1> counts(nclusters);
+    Eigen::Matrix<typename M::Index, Eigen::Dynamic, 1> labels(rows);
+    typename M::Scalar error = 0.0;
+    typename M::Scalar old_error = 0.0;
 
 #pragma omp parallel default(shared)
     {
-        Matrix local_clusters(clusters);
-        VectorXs local_counts(counts);
+        M local_clusters(clusters);
+        Eigen::Matrix<typename M::Index, Eigen::Dynamic, 1> local_counts(
+            counts);
         do {
             local_counts.setZero();
             local_clusters.setZero();
@@ -49,10 +53,11 @@ Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
             }
 
 #pragma omp for reduction(+ : error) nowait
-            for (Matrix::Index i = 0; i < rows; ++i) {
-                double min_distance = std::numeric_limits<double>::max();
-                for (Matrix::Index j = 0; j < nclusters; ++j) {
-                    double distance =
+            for (typename M::Index i = 0; i < rows; ++i) {
+                typename M::Scalar min_distance =
+                    std::numeric_limits<typename M::Scalar>::max();
+                for (typename M::Index j = 0; j < nclusters; ++j) {
+                    typename M::Scalar distance =
                         (points.row(i) - clusters.row(j)).array().pow(2).sum();
                     if (distance < min_distance) {
                         labels[i] = j;
@@ -73,8 +78,8 @@ Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
 
 #pragma omp barrier
 #pragma omp single
-            for (Matrix::Index j = 0; j < nclusters; ++j) {
-                for (Matrix::Index k = 0; k < cols; ++k) {
+            for (typename M::Index j = 0; j < nclusters; ++j) {
+                for (typename M::Index k = 0; k < cols; ++k) {
                     clusters(j, k) = counts[j] ? temp_clusters(j, k) / counts[j]
                                                : temp_clusters(j, k);
                 }
@@ -82,11 +87,12 @@ Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
         } while (std::abs(error - old_error) > epsilon);
     }
 
-    double max_radius = std::numeric_limits<double>::min();
-    Vector radii =
-        Vector::Constant(nclusters, std::numeric_limits<double>::min());
-    for (Matrix::Index i = 0; i < rows; ++i) {
-        double distance = std::sqrt(
+    typename M::Scalar max_radius =
+        std::numeric_limits<typename M::Scalar>::min();
+    V radii =
+        V::Constant(nclusters, std::numeric_limits<typename M::Scalar>::min());
+    for (typename M::Index i = 0; i < rows; ++i) {
+        typename M::Scalar distance = std::sqrt(
             (points.row(i) - clusters.row(labels[i])).array().pow(2).sum());
         if (distance > radii[labels[i]]) {
             radii[labels[i]] = distance;
@@ -98,4 +104,10 @@ Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
 
     return {max_radius, labels, clusters, counts, radii};
 }
-}
+
+// Explicit instantiation
+template Clustering<Matrix, Vector>
+cluster(const Eigen::Ref<const Matrix> points, Matrix::Index nclusters,
+        Matrix::Scalar epsilon,
+        const Eigen::Ref<const Matrix> starting_clusters);
+} // namespace fgt

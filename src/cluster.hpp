@@ -21,27 +21,34 @@
 
 namespace fgt {
 
-typedef Eigen::Matrix<Matrix::Index, Eigen::Dynamic, 1> VectorXs;
+// typedef Eigen::Matrix<Matrix::Index, Eigen::Dynamic, 1> VectorXs;
 
 /// The results from k-means clustering.
-struct Clustering {
+template <typename M, typename V>
+class Clustering {
+public:
     /// The maximum cluster radius.
-    double max_radius;
+    typename M::Scalar max_radius;
     /// The cluster membership ids for each points.
-    VectorXs indices;
+    Eigen::Matrix<typename M::Index, Eigen::Dynamic, 1> indices;
     /// The centers of each cluster.
-    Matrix clusters;
+    M clusters;
     /// The number of points in each cluster.
-    VectorXs npoints;
+    Eigen::Matrix<typename M::Index, Eigen::Dynamic, 1> npoints;
     /// The radius of each cluster.
-    Vector radii;
+    V radii;
 };
 
 /// Runs k-means clustering on a set of points.
-Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
-                   double epsilon);
+template <typename M, typename V>
+Clustering<M, V> cluster(const Eigen::Ref<const M> points,
+                         typename M::Index nclusters,
+                         typename M::Scalar epsilon);
 
 /// Runs k-means clustering, specifying the starting cluster centers.
-Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
-                   double epsilon, const MatrixRef starting_clusters);
-}
+template <typename M, typename V>
+Clustering<M, V> cluster(const Eigen::Ref<const M> points,
+                         typename M::Index nclusters,
+                         typename M::Scalar epsilon,
+                         const Eigen::Ref<const M> starting_clusters);
+} // namespace fgt

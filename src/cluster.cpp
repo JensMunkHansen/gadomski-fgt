@@ -24,24 +24,40 @@
 
 namespace fgt {
 
-Matrix pick_cluster_centers(const MatrixRef points, Matrix::Index nclusters) {
+template <typename M, typename V>
+M pick_cluster_centers(const Eigen::Ref<const M> points,
+                       typename M::Index nclusters) {
     std::default_random_engine generator;
-    std::uniform_int_distribution<Matrix::Index> distribution(0, points.rows() -
-                                                                     1);
-    Matrix::Index cols = points.cols();
-    Matrix clusters(nclusters, cols);
-    for (Matrix::Index j = 0; j < nclusters; ++j) {
-        Matrix::Index index = distribution(generator);
-        for (Matrix::Index k = 0; k < cols; ++k) {
+    std::uniform_int_distribution<typename M::Index> distribution(
+        0, points.rows() - 1);
+    typename M::Index cols = points.cols();
+    M clusters(nclusters, cols);
+    for (typename M::Index j = 0; j < nclusters; ++j) {
+        typename M::Index index = distribution(generator);
+        for (typename M::Index k = 0; k < cols; ++k) {
             clusters(j, k) = points(index, k);
         }
     }
     return clusters;
 }
 
-Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
-                   double epsilon) {
-    Matrix clusters = pick_cluster_centers(points, nclusters);
-    return cluster(points, nclusters, epsilon, clusters);
+template <typename M, typename V>
+Clustering<M, V> cluster(const Eigen::Ref<const M> points,
+                         typename M::Index nclusters,
+                         typename M::Scalar epsilon) {
+    M clusters = pick_cluster_centers<M, V>(points, nclusters);
+    return cluster<M, V>(points, nclusters, epsilon, clusters);
 }
-}
+
+// Explicit Instantiations
+template class Clustering<Matrix, Vector>;
+
+template Clustering<Matrix, Vector>
+cluster(const Eigen::Ref<const Matrix> points, Matrix::Index nclusters,
+        Matrix::Scalar epsilon);
+
+template Matrix
+pick_cluster_centers<Matrix, Vector>(const Eigen::Ref<const Matrix> points,
+                                     Matrix::Index nclusters);
+
+} // namespace fgt

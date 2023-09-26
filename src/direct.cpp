@@ -22,20 +22,22 @@
 
 namespace fgt {
 
-Direct::Direct(const MatrixRef source, double bandwidth)
-    : Transform(source, bandwidth) {}
+template <typename M, typename V>
+Direct<M, V>::Direct(const MatrixRef source, typename M::Scalar bandwidth)
+    : Transform<M, V>(source, bandwidth) {}
 
-Vector Direct::compute_impl(const MatrixRef target,
-                            const VectorRef weights) const {
-    double h2 = bandwidth() * bandwidth();
+template <typename M, typename V>
+V Direct<M, V>::compute_impl(const MatrixRef target,
+                             const VectorRef weights) const {
+    typename M::Scalar h2 = this->bandwidth() * this->bandwidth();
     MatrixRef source = this->source();
     auto rows_source = source.rows();
     auto rows_target = target.rows();
-    Vector g = Vector::Zero(rows_target);
+    V g = V::Zero(rows_target);
 #pragma omp parallel for
-    for (Matrix::Index j = 0; j < rows_target; ++j) {
-        for (Matrix::Index i = 0; i < rows_source; ++i) {
-            double distance =
+    for (typename M::Index j = 0; j < rows_target; ++j) {
+        for (typename M::Index i = 0; i < rows_source; ++i) {
+            typename M::Scalar distance =
                 (source.row(i) - target.row(j)).array().pow(2).sum();
             g[j] += weights[i] * std::exp(-distance / h2);
         }
@@ -43,13 +45,26 @@ Vector Direct::compute_impl(const MatrixRef target,
     return g;
 }
 
-Vector direct(const MatrixRef source, const MatrixRef target,
-              double bandwidth) {
-    return Direct(source, bandwidth).compute(target);
+template <typename M, typename V>
+V direct(const Eigen::Ref<const M> source, const Eigen::Ref<const M> target,
+         typename M::Scalar bandwidth) {
+    return Direct<M, V>(source, bandwidth).compute(target);
 }
 
-Vector direct(const MatrixRef source, const MatrixRef target, double bandwidth,
-              const VectorRef weights) {
-    return Direct(source, bandwidth).compute(target, weights);
+template <typename M, typename V>
+V direct(const Eigen::Ref<const M> source, const Eigen::Ref<const M> target,
+         typename M::Scalar bandwidth, const Eigen::Ref<const V> weights) {
+    return Direct<M, V>(source, bandwidth).compute(target, weights);
 }
-}
+// Explicit instantiations
+template class Direct<Matrix, Vector>;
+template Vector direct(const Eigen::Ref<const Matrix> source,
+                       const Eigen::Ref<const Matrix> target,
+                       Matrix::Scalar bandwidth,
+                       const Eigen::Ref<const Vector> weights);
+
+template Vector direct(const Eigen::Ref<const Matrix> source,
+                       const Eigen::Ref<const Matrix> target,
+                       Matrix::Scalar bandwidth);
+
+} // namespace fgt

@@ -22,16 +22,19 @@
 
 namespace fgt {
 
-Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
-                   double epsilon, const MatrixRef starting_clusters) {
+template <typename M, typename V>
+Clustering<M, V> cluster(const Eigen::Ref<const M> points,
+                         typename M::Index nclusters,
+                         typename M::Scalar epsilon,
+                         const Eigen::Ref<const M> starting_clusters) {
     auto cols = points.cols();
     auto rows = points.rows();
-    Matrix clusters(starting_clusters);
-    Matrix temp_clusters(nclusters, cols);
-    VectorXs counts(nclusters);
-    VectorXs labels(rows);
-    double error = 0.0;
-    double old_error = 0.0;
+    M clusters(starting_clusters);
+    M temp_clusters(nclusters, cols);
+    Eigen::Matrix<typename M::Index, Eigen::Dynamic, 1> counts(nclusters);
+    Eigen::Matrix<typename M::Index, Eigen::Dynamic, 1> labels(rows);
+    typename M::Scalar error = 0.0;
+    typename M::Scalar old_error = 0.0;
 
     do {
         old_error = error;
@@ -39,10 +42,11 @@ Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
         counts.setZero();
         temp_clusters.setZero();
 
-        for (Matrix::Index i = 0; i < rows; ++i) {
-            double min_distance = std::numeric_limits<double>::max();
-            for (Matrix::Index j = 0; j < nclusters; ++j) {
-                double distance =
+        for (typename M::Index i = 0; i < rows; ++i) {
+            typename M::Scalar min_distance =
+                std::numeric_limits<typename M::Scalar>::max();
+            for (typename M::Index j = 0; j < nclusters; ++j) {
+                typename M::Scalar distance =
                     (points.row(i) - clusters.row(j)).array().pow(2).sum();
                 if (distance < min_distance) {
                     labels[i] = j;
@@ -55,19 +59,20 @@ Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
             error += min_distance;
         }
 
-        for (Matrix::Index j = 0; j < nclusters; ++j) {
-            for (Matrix::Index k = 0; k < cols; ++k) {
+        for (typename M::Index j = 0; j < nclusters; ++j) {
+            for (typename M::Index k = 0; k < cols; ++k) {
                 clusters(j, k) = counts[j] ? temp_clusters(j, k) / counts[j]
                                            : temp_clusters(j, k);
             }
         }
     } while (std::abs(error - old_error) > epsilon);
 
-    double max_radius = std::numeric_limits<double>::min();
-    Vector radii =
-        Vector::Constant(nclusters, std::numeric_limits<double>::min());
-    for (Matrix::Index i = 0; i < rows; ++i) {
-        double distance = std::sqrt(
+    typename M::Scalar max_radius =
+        std::numeric_limits<typename M::Scalar>::min();
+    V radii =
+        V::Constant(nclusters, std::numeric_limits<typename M::Scalar>::min());
+    for (typename M::Index i = 0; i < rows; ++i) {
+        typename M::Scalar distance = std::sqrt(
             (points.row(i) - clusters.row(labels[i])).array().pow(2).sum());
         if (distance > radii[labels[i]]) {
             radii[labels[i]] = distance;
@@ -79,4 +84,8 @@ Clustering cluster(const MatrixRef points, Matrix::Index nclusters,
 
     return {max_radius, labels, clusters, counts, radii};
 }
-}
+template Clustering<Matrix, Vector>
+cluster(const Eigen::Ref<const Matrix> points, Matrix::Index nclusters,
+        Matrix::Scalar epsilon,
+        const Eigen::Ref<const Matrix> starting_clusters);
+} // namespace fgt

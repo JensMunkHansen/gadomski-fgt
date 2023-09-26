@@ -19,15 +19,21 @@
 
 namespace fgt {
 
-Transform::Transform(const MatrixRef source, double bandwidth)
+template <typename M, typename V>
+Transform<M, V>::Transform(const MatrixRef source, typename M::Scalar bandwidth)
     : m_source(source), m_bandwidth(bandwidth) {}
 
-Vector Transform::compute(const MatrixRef target) {
-    Vector weights = Vector::Ones(this->source().rows());
+template <typename M, typename V>
+V Transform<M, V>::compute(const MatrixRef target) {
+    V weights = V::Ones(this->source().rows());
     return compute(target, weights);
 }
 
-Vector Transform::compute(const MatrixRef target, const VectorRef weights) {
+template <typename M, typename V>
+V Transform<M, V>::compute(const MatrixRef target, const VectorRef weights) {
     return compute_impl(target, weights);
 }
-}
+
+// Explicit instantiations
+template class Transform<Matrix, Vector>;
+} // namespace fgt

@@ -26,22 +26,26 @@ namespace fgt {
 /// Tuning parameters for the IFGT.
 ///
 /// In general, you shouldn't need to create these yourself.
+template <typename M, typename V>
 struct IfgtParameters {
     /// The number of clusters that should be used for the IFGT.
-    Matrix::Index nclusters;
+    typename M::Index nclusters;
     /// The cutoff radius.
-    double cutoff_radius;
+    typename M::Scalar cutoff_radius;
 };
 
 /// Chooses appropriate parameters for an IFGT.
-IfgtParameters ifgt_choose_parameters(Matrix::Index cols, double bandwidth,
-                                      double epsilon,
-                                      Matrix::Index max_num_clusters,
-                                      Matrix::Index truncation_number_ul);
+template <typename M, typename V>
+IfgtParameters<M, V>
+ifgt_choose_parameters(typename M::Index cols, typename M::Scalar bandwidth,
+                       typename M::Scalar epsilon,
+                       typename M::Index max_num_clusters,
+                       typename M::Index truncation_number_ul);
 /// Chooses the appropriate truncation number for IFGT, given a max clustering
 /// radius.
-Matrix::Index ifgt_choose_truncation_number(Matrix::Index cols,
-                                            double bandwidth, double epsilon,
-                                            double max_radius,
-                                            Matrix::Index truncation_number_ul);
-}
+template <typename M, typename V>
+typename M::Index ifgt_choose_truncation_number(
+    typename M::Index cols, typename M::Scalar bandwidth,
+    typename M::Scalar epsilon, typename M::Scalar max_radius,
+    typename M::Index truncation_number_ul);
+} // namespace fgt

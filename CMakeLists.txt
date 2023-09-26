@@ -65,7 +65,7 @@ if(WIN32)
         ${PROJECT_BINARY_DIR}/version.cpp
         )
 else()
-    add_library(Library-C++
+  add_library(Library-C++
         src/cluster.cpp
         src/direct.cpp
         src/direct_tree.cpp
@@ -145,15 +145,8 @@ if(WITH_BENCH)
 endif()
 
 if(WITH_TESTS)
-    enable_testing()
-    set(GOOGLETEST_VERSION 1.10.0)
-    add_subdirectory("${PROJECT_SOURCE_DIR}/vendor/googletest-release-1.10.0/googletest")
-
-    set_target_properties(gtest PROPERTIES MACOSX_RPATH ON)
-    target_compile_options(gtest PUBLIC -std=c++11)
-    set_target_properties(gtest_main PROPERTIES MACOSX_RPATH ON)
-    target_compile_options(gtest_main PUBLIC -std=c++11)
-
+  enable_testing()
+  find_package(GTest REQUIRED)
     add_subdirectory(test)
 endif()
 
